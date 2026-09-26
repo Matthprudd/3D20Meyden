@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MEYDEN 3D20</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:#0b0d10;
+  color:#f5f5f5;
+}
+
+header{
+  padding:28px 20px;
+  background:linear-gradient(135deg,#111,#1d2329);
+  border-bottom:1px solid #333;
+}
+
+header h1{
+  margin:0;
+  font-size:34px;
+}
+
+header p{
+  margin:7px 0 0;
+  color:#aeb6bf;
+}
+
+.container{
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
+
+.card{
+  background:#15191e;
+  border:1px solid #2d343c;
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:18px;
+  box-shadow:0 12px 30px rgba(0,0,0,.2);
+}
+
+h2{
+  margin-top:0;
+  font-size:20px;
+}
+
+.status{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:13px;
+  border-radius:10px;
+  background:#0e1115;
+  margin-bottom:15px;
+}
+
+.dot{
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:#777;
+}
+
+.dot.ok{
+  background:#31d158;
+  box-shadow:0 0 12px #31d158;
+}
+
+.dot.bad{
+  background:#ff453a;
+}
+
+button{
+  border:0;
+  border-radius:10px;
+  padding:12px 18px;
+  cursor:pointer;
+  background:#f1f1f1;
+  color:#111;
+  font-weight:700;
+  font-size:14px;
+  margin:4px;
+}
+
+button.primary{
+  background:#31d158;
+}
+
+button.secondary{
+  background:#2997ff;
+  color:white;
+}
+
+button.danger{
+  background:#ff453a;
+  color:white;
+}
+
+button:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+
+.drop{
+  border:2px dashed #454d55;
+  border-radius:14px;
+  min-height:145px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:20px;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.drop:hover,
+.drop.drag{
+  border-color:#31d158;
+  background:#19251d;
+}
+
+.file-name{
+  color:#31d158;
+  font-weight:bold;
+  margin-top:10px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+}
+
+label{
+  font-size:13px;
+  color:#aaa;
+}
+
+input,select{
+  width:100%;
+  margin-top:6px;
+  padding:11px;
+  border-radius:9px;
+  border:1px solid #343b43;
+  background:#0d1014;
+  color:white;
+}
+
+.bigbutton{
+  width:100%;
+  padding:17px;
+  font-size:17px;
+}
+
+.log{
+  background:#080a0c;
+  border:1px solid #272c32;
+  padding:14px;
+  min-height:180px;
+  max-height:300px;
+  overflow:auto;
+  white-space:pre-wrap;
+  font-family:monospace;
+  font-size:12px;
+  color:#b9c4cf;
+}
+
+.badge{
+  display:inline-block;
+  padding:5px 10px;
+  border-radius:20px;
+  background:#222831;
+  font-size:12px;
+  margin-right:5px;
+}
+
+.warning{
+  color:#ffcc00;
+}
+
+.success{
+  color:#31d158;
+}
+
+footer{
+  text-align:center;
+  color:#68717a;
+  padding:20px;
+  font-size:12px;
+}
+
+@media(max-width:600px){
+  header h1{font-size:26px;}
+  button{width:100%;margin:5px 0;}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>MEYDEN 3D20</h1>
+  <p>Gestionnaire Dremel 3D20 • USB • G-code • G3DREM</p>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>1 — Dremel 3D20</h2>
+
+    <div class="status">
+      <div id="usbDot" class="dot"></div>
+      <div>
+        <strong id="usbStatus">Aucune imprimante connectée</strong><br>
+        <small id="usbDetails">Clique sur Connecter Dremel</small>
+      </div>
+    </div>
+
+    <button class="primary" onclick="connectUSB()">
+      🔌 Connecter Dremel 3D20
+    </button>
+
+    <button onclick="checkExistingUSB()">
+      Actualiser USB
+    </button>
+  </div>
+
+
+  <div class="card">
+    <h2>2 — Importer un fichier</h2>
+
+    <input
+      id="fileInput"
+      type="file"
+      accept=".gcode,.g3drem,.stl,.obj"
+      hidden
+    >
+
+    <div id="dropZone" class="drop">
+      <div>
+        <strong>Dépose ton fichier ici</strong>
+        <br><br>
+        STL • OBJ • GCODE • G3DREM
+        <div id="fileName" class="file-name"></div>
+      </div>
+    </div>
+
+    <p id="fileInfo"></p>
+  </div>
+
+
+  <div class="card">
+    <h2>3 — Réglages Dremel 3D20</h2>
+
+    <div class="grid">
+
+      <div>
+        <label>Matériau</label>
+        <select id="material">
+          <option value="PLA">PLA 1,75 mm</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Hauteur couche</label>
+        <select id="layer">
+          <option value="0.10">Haute qualité — 0,10 mm</option>
+          <option value="0.20" selected>Standard — 0,20 mm</option>
+          <option value="0.30">Rapide — 0,30 mm</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Remplissage</label>
+        <select id="infill">
+          <option value="10">10 %</option>
+          <option value="20" selected>20 %</option>
+          <option value="40">40 %</option>
+          <option value="60">60 %</option>
+          <option value="100">100 %</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Parois</label>
+        <select id="shells">
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Température buse</label>
+        <input id="temperature" type="number" value="220">
+      </div>
+
+      <div>
+        <label>Vitesse mm/s</label>
+        <input id="speed" type="number" value="50">
+      </div>
+
+      <div>
+        <label>Supports</label>
+        <select id="supports">
+          <option value="0" selected>Non</option>
+          <option value="1">Oui</option>
+        </select>
+      </div>
+
+    </div>
+
+    <br>
+
+    <span class="badge">230 × 150 × 140 mm</span>
+    <span class="badge">PLA</span>
+    <span class="badge">1 extrudeur</span>
+    <span class="badge">1,75 mm</span>
+
+  </div>
+
+
+  <div class="card">
+    <h2>4 — Préparer l'impression</h2>
+
+    <button
+      id="convertButton"
+      class="secondary bigbutton"
+      onclick="generateG3DREM()"
+      disabled
+    >
+      Générer le fichier Dremel .G3DREM
+    </button>
+
+    <br><br>
+
+    <div class="warning">
+      Les fichiers STL et OBJ doivent d'abord être découpés en G-code.
+      Cette version prépare directement les fichiers G-code pour la Dremel 3D20.
+    </div>
+
+  </div>
+
+
+  <div class="card">
+    <h2>Journal</h2>
+    <div id="log" class="log">MEYDEN 3D20 initialisé.</div>
+  </div>
+
+</div>
+
+<footer>
+MEYDEN 3D20 Manager • version HTML 0.1
+</footer>
+
+
+<script>
+
+let selectedFile = null;
+let fileBuffer = null;
+let gcodeText = null;
+let usbDevice = null;
+
+
+// -----------------------------------------------------
+// LOG
+// -----------------------------------------------------
+
+function log(message){
+
+  const box = document.getElementById("log");
+
+  const time = new Date().toLocaleTimeString();
+
+  box.textContent +=
+    "\n[" + time + "] " + message;
+
+  box.scrollTop = box.scrollHeight;
+}
+
+
+// -----------------------------------------------------
+// USB DREMEL 3D20
+// Vendor: 0x2A89
+// Product: 0x8889
+// -----------------------------------------------------
+
+async function connectUSB(){
+
+  if(!navigator.usb){
+
+    setUSBStatus(
+      false,
+      "WebUSB non disponible",
+      "Utilise Google Chrome."
+    );
+
+    log("ERREUR : WebUSB non supporté.");
+
+    return;
+  }
+
+  try{
+
+    log("Recherche de la Dremel 3D20...");
+
+    usbDevice =
+      await navigator.usb.requestDevice({
+
+        filters:[
+          {
+            vendorId:0x2A89,
+            productId:0x8889
+          }
+        ]
+
+      });
+
+
+    setUSBStatus(
+      true,
+      "Dremel 3D20 détectée",
+      (
+        usbDevice.productName ||
+        "BOSCH Dremel 3D Printer"
+      )
+    );
+
+
+    log(
+      "USB connecté : " +
+      (
+        usbDevice.productName ||
+        "Dremel 3D20"
+      )
+    );
+
+
+    log(
+      "Vendor ID : 0x" +
+      usbDevice.vendorId.toString(16)
+    );
+
+
+    log(
+      "Product ID : 0x" +
+      usbDevice.productId.toString(16)
+    );
+
+
+  }catch(error){
+
+    setUSBStatus(
+      false,
+      "Connexion annulée",
+      error.message
+    );
+
+    log(
+      "USB : " +
+      error.message
+    );
+
+  }
+
+}
+
+
+
+async function checkExistingUSB(){
+
+  if(!navigator.usb){
+
+    alert(
+      "WebUSB n'est pas disponible.\n\n" +
+      "Ouvre ce fichier avec Google Chrome."
+    );
+
+    return;
+  }
+
+  try{
+
+    const devices =
+      await navigator.usb.getDevices();
+
+
+    const dremel =
+      devices.find(
+        d =>
+          d.vendorId === 0x2A89 &&
+          d.productId === 0x8889
+      );
+
+
+    if(dremel){
+
+      usbDevice = dremel;
+
+      setUSBStatus(
+        true,
+        "Dremel 3D20 détectée",
+        dremel.productName ||
+        "BOSCH Dremel 3D Printer"
+      );
+
+      log("Dremel déjà autorisée détectée.");
+
+    }else{
+
+      setUSBStatus(
+        false,
+        "Dremel non autorisée",
+        "Clique sur Connecter Dremel."
+      );
+
+    }
+
+  }catch(e){
+
+    log(e.message);
+
+  }
+
+}
+
+
+
+function setUSBStatus(
+  connected,
+  title,
+  details
+){
+
+  const dot =
+    document.getElementById("usbDot");
+
+  dot.className =
+    "dot " +
+    (
+      connected
+      ? "ok"
+      : "bad"
+    );
+
+
+  document.getElementById(
+    "usbStatus"
+  ).textContent = title;
+
+
+  document.getElementById(
+    "usbDetails"
+  ).textContent = details;
+
+}
+
+
+// -----------------------------------------------------
+// FILES
+// -----------------------------------------------------
+
+const input =
+  document.getElementById("fileInput");
+
+const drop =
+  document.getElementById("dropZone");
+
+
+drop.onclick =
+  () => input.click();
+
+
+input.addEventListener(
+  "change",
+  e => {
+
+    if(e.target.files[0]){
+      loadFile(
+        e.target.files[0]
+      );
+    }
+
+  }
+);
+
+
+drop.addEventListener(
+  "dragover",
+  e => {
+
+    e.preventDefault();
+
+    drop.classList.add(
+      "drag"
+    );
+
+  }
+);
+
+
+drop.addEventListener(
+  "dragleave",
+  () => {
+
+    drop.classList.remove(
+      "drag"
+    );
+
+  }
+);
+
+
+drop.addEventListener(
+  "drop",
+  e => {
+
+    e.preventDefault();
+
+    drop.classList.remove(
+      "drag"
+    );
+
+    if(e.dataTransfer.files[0]){
+
+      loadFile(
+        e.dataTransfer.files[0]
+      );
+
+    }
+
+  }
+);
+
+
+
+async function loadFile(file){
+
+  selectedFile = file;
+
+  fileBuffer =
+    await file.arrayBuffer();
+
+
+  document.getElementById(
+    "fileName"
+  ).textContent =
+    file.name;
+
+
+  document.getElementById(
+    "fileInfo"
+  ).textContent =
+    formatBytes(
+      file.size
+    );
+
+
+  const extension =
+    file.name
+      .split(".")
+      .pop()
+      .toLowerCase();
+
+
+  log(
+    "Fichier chargé : " +
+    file.name
+  );
+
+
+  if(extension === "gcode"){
+
+    gcodeText =
+      new TextDecoder()
+      .decode(
+        fileBuffer
+      );
+
+
+    document.getElementById(
+      "convertButton"
+    ).disabled = false;
+
+
+    parseGcodeMetadata(
+      gcodeText
+    );
+
+
+    log(
+      "G-code prêt pour conversion."
+    );
+
+  }
+
+
+  else if(extension === "g3drem"){
+
+    gcodeText = null;
+
+    document.getElementById(
+      "convertButton"
+    ).disabled = true;
+
+
+    validateG3DREM(
+      fileBuffer
+    );
+
+  }
+
+
+  else if(
+    extension === "stl" ||
+    extension === "obj"
+  ){
+
+    gcodeText = null;
+
+    document.getElementById(
+      "convertButton"
+    ).disabled = true;
+
+
+    log(
+      "Modèle 3D détecté."
+    );
+
+
+    log(
+      "Le modèle doit être découpé avant conversion."
+    );
+
+  }
+
+}
+
+
+// -----------------------------------------------------
+// GCODE METADATA
+// -----------------------------------------------------
+
+function parseGcodeMetadata(text){
+
+  const time =
+    text.match(
+      /^;\s*TIME\s*:\s*(\d+)/mi
+    );
+
+
+  const filament =
+    text.match(
+      /Filament used\s*:\s*([\d.]+)\s*(m|mm)?/i
+    );
+
+
+  const layer =
+    text.match(
+      /Layer height\s*[:=]\s*([\d.]+)/i
+    );
+
+
+  if(time){
+
+    log(
+      "Temps estimé : " +
+      Math.round(
+        Number(time[1]) / 60
+      ) +
+      " minutes"
+    );
+
+  }
+
+
+  if(filament){
+
+    log(
+      "Filament indiqué : " +
+      filament[1] +
+      (
+        filament[2] || "m"
+      )
+    );
+
+  }
+
+
+  if(layer){
+
+    document.getElementById(
+      "layer"
+    ).value =
+      layer[1];
+
+  }
+
+}
+
+
+// -----------------------------------------------------
+// G3DREM
+// -----------------------------------------------------
+
+function generateG3DREM(){
+
+  if(!gcodeText){
+
+    alert(
+      "Importe d'abord un fichier G-code."
+    );
+
+    return;
+  }
+
+
+  const layer =
+    Number(
+      document.getElementById(
+        "layer"
+      ).value
+    );
+
+
+  const infill =
+    Number(
+      document.getElementById(
+        "infill"
+      ).value
+    );
+
+
+  const shells =
+    Number(
+      document.getElementById(
+        "shells"
+      ).value
+    );
+
+
+  const speed =
+    Number(
+      document.getElementById(
+        "speed"
+      ).value
+    );
+
+
+  const nozzle =
+    Number(
+      document.getElementById(
+        "temperature"
+      ).value
+    );
+
+
+  const supports =
+    document.getElementById(
+      "supports"
+    ).value === "1";
+
+
+  const bmp =
+    createBMP();
+
+
+  const encoder =
+    new TextEncoder();
+
+
+  let gcode =
+    gcodeText;
+
+
+  if(!gcode.endsWith("\n")){
+
+    gcode += "\n";
+
+  }
+
+
+  const gcodeBytes =
+    encoder.encode(
+      gcode
+    );
+
+
+  const HEADER_SIZE = 58;
+
+  const thumbnailOffset =
+    HEADER_SIZE;
+
+  const gcodeOffset =
+    HEADER_SIZE +
+    bmp.byteLength;
+
+
+  let timeSeconds = 0;
+  let filamentMM = 0;
+
+
+  const t =
+    gcode.match(
+      /^;\s*TIME\s*:\s*(\d+)/mi
+    );
+
+  if(t){
+    timeSeconds =
+      Number(t[1]);
+  }
+
+
+  const f =
+    gcode.match(
+      /Filament used\s*:\s*([\d.]+)\s*(m|mm)?/i
+    );
+
+
+  if(f){
+
+    const value =
+      Number(
+        f[1]
+      );
+
+    const unit =
+      (
+        f[2] ||
+        "m"
+      ).toLowerCase();
+
+
+    filamentMM =
+      Math.round(
+        unit === "mm"
+          ? value
+          : value * 1000
+      );
+
+  }
+
+
+  const totalSize =
+    HEADER_SIZE +
+    bmp.byteLength +
+    gcodeBytes.byteLength;
+
+
+  const output =
+    new Uint8Array(
+      totalSize
+    );
+
+
+  const view =
+    new DataView(
+      output.buffer
+    );
+
+
+  const magic =
+    "g3drem 1.0      ";
+
+
+  for(
+    let i=0;
+    i<16;
+    i++
+  ){
+
+    output[i] =
+      magic.charCodeAt(i);
+
+  }
+
+
+  let pos = 16;
+
+
+  function u32(v){
+
+    view.setUint32(
+      pos,
+      v,
+      true
+    );
+
+    pos += 4;
+
+  }
+
+
+  function u16(v){
+
+    view.setUint16(
+      pos,
+      v,
+      true
+    );
+
+    pos += 2;
+
+  }
+
+
+  u32(
+    thumbnailOffset
+  );
+
+
+  u32(
+    gcodeOffset
+  );
+
+
+  u32(
+    gcodeOffset
+  );
+
+
+  u32(
+    timeSeconds
+  );
+
+
+  u32(
+    filamentMM
+  );
+
+
+  u32(
+    0
+  );
+
+
+  let flags =
+    0x01;
+
+
+  if(supports){
+
+    flags |=
+      0x08;
+
+  }
+
+
+  u16(
+    flags
+  );
+
+
+  u16(
+    Math.round(
+      layer * 1000
+    )
+  );
+
+
+  u16(
+    infill
+  );
+
+
+  u16(
+    shells
+  );
+
+
+  u16(
+    speed
+  );
+
+
+  u16(
+    0
+  );
+
+
+  u16(
+    nozzle
+  );
+
+
+  u16(
+    0
+  );
+
+
+  output[pos++] =
+    1;
+
+
+  output[pos++] =
+    0xFF;
+
+
+  output.set(
+    new Uint8Array(bmp),
+    HEADER_SIZE
+  );
+
+
+  output.set(
+    gcodeBytes,
+    gcodeOffset
+  );
+
+
+  const blob =
+    new Blob(
+      [output],
+      {
+        type:
+        "application/octet-stream"
+      }
+    );
+
+
+  let filename =
+    selectedFile.name
+      .replace(
+        /\.gcode$/i,
+        ""
+      ) +
+    ".g3drem";
+
+
+  downloadBlob(
+    blob,
+    filename
+  );
+
+
+  log(
+    "G3DREM créé : " +
+    filename
+  );
+
+
+  log(
+    "Taille : " +
+    formatBytes(
+      totalSize
+    )
+  );
+
+}
+
+
+// -----------------------------------------------------
+// BMP 80x60
+// -----------------------------------------------------
+
+function createBMP(){
+
+  const width = 80;
+  const height = 60;
+
+  const rowSize =
+    Math.ceil(
+      width * 3 / 4
+    ) * 4;
+
+
+  const pixelSize =
+    rowSize *
+    height;
+
+
+  const size =
+    54 +
+    pixelSize;
+
+
+  const buffer =
+    new ArrayBuffer(
+      size
+    );
+
+
+  const bytes =
+    new Uint8Array(
+      buffer
+    );
+
+
+  const view =
+    new DataView(
+      buffer
+    );
+
+
+  bytes[0] =
+    0x42;
+
+  bytes[1] =
+    0x4D;
+
+
+  view.setUint32(
+    2,
+    size,
+    true
+  );
+
+
+  view.setUint32(
+    10,
+    54,
+    true
+  );
+
+
+  view.setUint32(
+    14,
+    40,
+    true
+  );
+
+
+  view.setInt32(
+    18,
+    width,
+    true
+  );
+
+
+  view.setInt32(
+    22,
+    height,
+    true
+  );
+
+
+  view.setUint16(
+    26,
+    1,
+    true
+  );
+
+
+  view.setUint16(
+    28,
+    24,
+    true
+  );
+
+
+  view.setUint32(
+    34,
+    pixelSize,
+    true
+  );
+
+
+  for(
+    let y=0;
+    y<height;
+    y++
+  ){
+
+    for(
+      let x=0;
+      x<width;
+      x++
+    ){
+
+      const index =
+        54 +
+        y*rowSize +
+        x*3;
+
+
+      let r = 25;
+      let g = 30;
+      let b = 36;
+
+
+      const left =
+        x >= 17 &&
+        x <= 21 &&
+        y >= 14 &&
+        y <= 46;
+
+
+      const right =
+        x >= 58 &&
+        x <= 62 &&
+        y >= 14 &&
+        y <= 46;
+
+
+      const diag1 =
+        x >= 21 &&
+        x <= 39 &&
+        y >= 18 &&
+        y <= 36 &&
+        Math.abs(
+          (x-21) -
+          (y-18)
+        ) <= 2;
+
+
+      const diag2 =
+        x >= 40 &&
+        x <= 58 &&
+        y >= 18 &&
+        y <= 36 &&
+        Math.abs(
+          (58-x) -
+          (y-18)
+        ) <= 2;
+
+
+      if(
+        left ||
+        right ||
+        diag1 ||
+        diag2
+      ){
+
+        r = 235;
+        g = 235;
+        b = 235;
+
+      }
+
+
+      bytes[index] =
+        b;
+
+      bytes[index+1] =
+        g;
+
+      bytes[index+2] =
+        r;
+
+    }
+
+  }
+
+
+  return buffer;
+
+}
+
+
+// -----------------------------------------------------
+// VALIDATION
+// -----------------------------------------------------
+
+function validateG3DREM(buffer){
+
+  if(buffer.byteLength < 58){
+
+    log(
+      "Fichier G3DREM invalide."
+    );
+
+    return;
+
+  }
+
+
+  const bytes =
+    new Uint8Array(
+      buffer
+    );
+
+
+  let signature = "";
+
+  for(
+    let i=0;
+    i<16;
+    i++
+  ){
+
+    signature +=
+      String.fromCharCode(
+        bytes[i]
+      );
+
+  }
+
+
+  if(
+    !signature.startsWith(
+      "g3drem 1.0"
+    )
+  ){
+
+    log(
+      "Signature G3DREM non reconnue."
+    );
+
+    return;
+
+  }
+
+
+  const view =
+    new DataView(
+      buffer
+    );
+
+
+  const gcodeOffset =
+    view.getUint32(
+      24,
+      true
+    );
+
+
+  log(
+    "Fichier G3DREM valide."
+  );
+
+
+  log(
+    "G-code à l'octet : " +
+    gcodeOffset
+  );
+
+}
+
+
+// -----------------------------------------------------
+// DOWNLOAD
+// -----------------------------------------------------
+
+function downloadBlob(
+  blob,
+  filename
+){
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const a =
+    document.createElement(
+      "a"
+    );
+
+
+  a.href =
+    url;
+
+
+  a.download =
+    filename;
+
+
+  document.body.appendChild(
+    a
+  );
+
+
+  a.click();
+
+
+  a.remove();
+
+
+  setTimeout(
+    () =>
+      URL.revokeObjectURL(
+        url
+      ),
+    1000
+  );
+
+}
+
+
+// -----------------------------------------------------
+// UTILS
+// -----------------------------------------------------
+
+function formatBytes(bytes){
+
+  if(bytes === 0)
+    return "0 octet";
+
+
+  const units =
+    [
+      "octets",
+      "Ko",
+      "Mo",
+      "Go"
+    ];
+
+
+  const i =
+    Math.floor(
+      Math.log(bytes) /
+      Math.log(1024)
+    );
+
+
+  return (
+    bytes /
+    Math.pow(
+      1024,
+      i
+    )
+  ).toFixed(2) +
+  " " +
+  units[i];
+
+}
+
+
+// -----------------------------------------------------
+// AUTO USB
+// -----------------------------------------------------
+
+window.addEventListener(
+  "load",
+  () => {
+
+    log(
+      "Application prête."
+    );
+
+
+    if(navigator.usb){
+
+      log(
+        "WebUSB disponible."
+      );
+
+      checkExistingUSB();
+
+    }else{
+
+      log(
+        "WebUSB absent. Utiliser Google Chrome."
+      );
+
+    }
+
+  }
+);
+
+</script>
+
+</body>
+</html>
